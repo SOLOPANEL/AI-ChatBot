@@ -22,9 +22,9 @@ const CodeBlock = ({ /**node, inline,**/ className, children, ...props }) => {
   };
 
   return (
-    <div className="my-4 rounded-lg overflow-hidden relative group shadow-lg">
+   <div className="my-6 rounded-xl overflow-hidden relative group shadow-lg border border-white/10">
       {/* Header with language label and copy button */}
-      <div className="flex justify-between items-center bg-gray-800 p-2 text-xs text-gray-400">
+      <div className="flex justify-between items-center bg-black/70 p-2 text-xs opacity-80">
         <span className="font-mono">{lang.toUpperCase()}</span>
         <button
           onClick={handleCopy}
@@ -33,9 +33,9 @@ const CodeBlock = ({ /**node, inline,**/ className, children, ...props }) => {
           {copied ? (
             <Check className="w-4 h-4 text-green-400" />
           ) : (
-            <Copy className="w-4 h-4 text-gray-300" />
+            <Copy className="italic opacity-80" />
           )}
-          <span className="text-white text-sm">
+          <span className="text-sm">
             {copied ? 'Copied!' : 'Copy Code'}
           </span>
         </button>
@@ -58,16 +58,22 @@ const CodeBlock = ({ /**node, inline,**/ className, children, ...props }) => {
 // --- 2. Main RichResponse Component ---
 const RichResponse = ({ content }) => {
   return (
-    <div className="text-gray-200 text-left">
+    <div className="text-left max-w-3xl">
     <ReactMarkdown
       components={{
         // Override the default <code> rendering with our custom component
         code: CodeBlock,
         
         // Custom styling for standard elements using Tailwind CSS
-        p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
-        h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-white" {...props} />,
-        h2: ({ node, ...props }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-white" {...props} />,
+        p: ({ node, ...props }) => (
+          <p className="mb-5 leading-relaxed text-[1.05rem]" {...props} />
+        ),
+        h1: ({ node, ...props }) => (
+          <h1 className="text-2xl font-bold mt-8 mb-4 border-b border-black/20 pb-2" {...props} />
+        ),
+        h2: ({ node, ...props }) => (
+          <h2 className="text-xl font-semibold mt-6 mb-3" {...props} />
+        ),
         ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-1" {...props} />,
         ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-1" {...props} />,
         a: ({ node, ...props }) => ( 
@@ -80,10 +86,18 @@ const RichResponse = ({ content }) => {
         ),
         blockquote: ({ node, ...props }) => (
           <blockquote
-            className="border-1-4 border-blue-500 pl-4 py-2 italic text-gray-400 my-4"
+            className="
+              border-l-4 border-blue-400
+              pl-4 py-3
+              my-6
+              italic
+              opacity-80
+              bg-white/5
+              rounded-r-lg
+            "
             {...props}
           />
-        ),  
+        ),
         // You can add custom components for tables, block quotes, etc. here
       }}
     >

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import './App.css'
+//import './App.css'
 import axios from 'axios'
 import RichResponse from './components/RichResponse'
 
 function App() {
+  const [theme, setTheme] = useState("dark");
   const [question, setQuestion] = useState("")
   const [answer, setAnswer] = useState("HELLO!, THIS IS MINI-GEMINI, ASK ME ANYTHING!")
   const [isLoading, setIsLoading] = useState(false)
@@ -61,9 +62,35 @@ function App() {
     
 
   return (
-    <div className="flex flex-col items-center p-4 w-full max-w-4xl min-h-screen">
-      
-    <h1 className="text-center mb-8">WELCOME TO MINI-GEMINI</h1>
+    <div data-theme={theme}
+    className="
+      min-h-screen
+      flex flex-col items-center
+      px-4 py-6
+      sm:px-6
+      md:px-8
+      max-w-4xl
+      mx-auto
+      font-cartoon
+    ">
+
+  
+    <h1 className="
+      text-center
+      mb-8
+      text-3xl
+      sm:text-4xl
+      md:text-5xl
+    ">WELCOME TO MINI-GEMINI</h1>
+
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="mb-6 text-sm underline opacity-80 hover:opacity-100"
+    >
+      Switch to {theme === "dark" ? "Light" : "Dark"} Mode
+    </button>
+
+
 
     <div className="w-full flex flex-col items-center gap-6 mb-12">
 
@@ -71,15 +98,16 @@ function App() {
       value={question} 
       onChange={(e) => setQuestion(e.target.value)} 
       disabled={isLoading}
+      rows={6}
       placeholder="Ask me anything..."
-      rows="6"
-      className="
-          textarea-focus
-          p-5 text-white w-full max-w-2xl text-lg 
-          rounded-[20px] bg-[#2a2240] border-4 border-[#ffcc00] 
-          focus:border-[#ff9900] transition-all duration-300 shadow-[8px_8px_0_0_#8b0000] 
-          resize-none font-cartoon-text
-          disabled:opacity-75 disabled:cursor-not-allowed"
+      className="input-card focus-ring disabled:opacity-70 text-base sm:text-lg"
+      // className="
+      //     textarea-focus
+      //     p-5 text-white w-full max-w-2xl text-lg 
+      //     rounded-[20px] bg-[#2a2240] border-4 border-[#ffcc00] 
+      //     focus:border-[#ff9900] transition-all duration-300 shadow-[8px_8px_0_0_#8b0000] 
+      //     resize-none font-cartoon-text
+      //     disabled:opacity-75 disabled:cursor-not-allowed"
       // className="
       // textarea-glow
       // p-5 text-white w-full max-w-2xl text-lg rounded-xl bg-[#2a2240] border-4 border-[#ffcc00]
@@ -89,17 +117,24 @@ function App() {
     ></textarea>
 
     <button onClick={generateAnswer}
-      disabled={isButtonDisabled} 
+      disabled={isButtonDisabled}
+      aria-busy={isLoading}
       className={`
-          button-vibrate-on-hover
-          flex items-center space-x-2
-          px-10 py-3 text-2xl font-black rounded-full text-black transition-all duration-150
-          font-cartoon-text tracking-wider border-4 border-black
-          ${isButtonDisabled 
-          ? 'bg-gray-400 text-gray-700 cursor-not-allowed shadow-[5px_5px_0_0_#4b4b4b]' // Disabled state cartoon shadow
-          : 'bg-[#ffcc00] hover:bg-[#ff9900] shadow-[8px_8px_0_0_#8b0000] active:translate-x-2 active:translate-y-2 active:shadow-none'
-          }
-        `}
+        primary-button
+        text-xl sm:text-2xl
+        ${!isLoading && !isButtonDisabled ? 'vibrate-once primary-button-enabled' : ''}
+        ${isButtonDisabled ? 'primary-button-disabled' : ''}
+      `}
+      // className={`
+      //     button-vibrate-on-hover
+      //     flex items-center space-x-2
+      //     px-10 py-3 text-2xl font-black rounded-full text-black transition-all duration-150
+      //     font-cartoon-text tracking-wider border-4 border-black
+      //     ${isButtonDisabled 
+      //     ? 'bg-gray-400 text-gray-700 cursor-not-allowed shadow-[5px_5px_0_0_#4b4b4b]' // Disabled state cartoon shadow
+      //     : 'bg-[#ffcc00] hover:bg-[#ff9900] shadow-[8px_8px_0_0_#8b0000] active:translate-x-2 active:translate-y-2 active:shadow-none'
+      //     }
+      //   `}
       // className={`
       //  button-vibrate-on-hover
       //  flex items-center space-x-2
@@ -110,14 +145,14 @@ function App() {
       //  }`
       // }
     >
-      <span>{isLoading ? 'Generating...' : 'Generate Answer'}</span>
-      <span className="text-3xl">✨</span>
+      <span>{isLoading ? 'Generating…' : 'Generate Answer'}</span>
+      {!isLoading && <span className="text-3xl">✨</span>}
     </button>
   </div>
   
-  <div className="w-full">
-    <div className="p-8 rounded-3xl bg-[#2a2240] shadow-2xl border-4 border-[#8b0000] transition-all duration-500">
-      <h2 className="text-3xl font-bold text-white mb-4 border-b-4 border-[#ffcc00] pb-2 text-left font-sans tracking-wide"> 
+  <div className="w-full flex justify-center">
+    <div className="response-card w-full sm:max-w-3xl">
+      <h2 className="text-3xl font-bold mb-4 border-b-4 pb-2 text-left">
         Response:
       </h2>
 
