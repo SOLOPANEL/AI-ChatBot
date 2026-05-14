@@ -31,12 +31,13 @@ function App() {
 
     try {
       const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+      console.log("API Key loaded:", apiKey ? `Yes (length: ${apiKey.length})` : "No (undefined)");
+      
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await axios({
         url: apiUrl,
         method: "post",
-        // data: { "contents": contents },
         data: { "contents": [ { "parts": [ { "text": question } ] } ] },
       })
 
@@ -44,7 +45,15 @@ function App() {
       setAnswer(responseText)
     
     } catch (error) {
-      console.log("API call error:", error)
+      console.error("API call error:", error);
+      if (error.response) {
+        console.error("Error Response Data:", error.response.data);
+        console.error("Error Response Status:", error.response.status);
+      } else if (error.request) {
+        console.error("Error Request:", error.request);
+      } else {
+        console.error("Error Message:", error.message);
+      }
       setAnswer("An error occurred while fetching the answer.")
       } finally {
         setIsLoading(false);
