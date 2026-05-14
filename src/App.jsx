@@ -30,7 +30,7 @@ function App() {
     ] 
 
     try {
-      const apiKey = "AIzaSyCHPEoiEXXEqNkg3OWfOkBPDKt9_YdUcE8";
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await axios({
@@ -49,12 +49,7 @@ function App() {
       } finally {
         setIsLoading(false);
       }  
-      // try {
-      // const response = await axios({
-      //   url:  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCHPEoiEXXEqNkg3OWfOkBPDKt9_YdUcE8",
-      //   method: "post",
-      //   data: { "contents": [ { "parts": [ { "text": question } ] } ] },
-      // })
+
   }
 
   //check if button should be disable
