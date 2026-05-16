@@ -1,33 +1,47 @@
-import { useState } from 'react'
-//import './App.css'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import RichResponse from './components/RichResponse'
 
 function App() {
-  const [theme, setTheme] = useState("dark");
-  const [question, setQuestion] = useState("")
-  const [answer, setAnswer] = useState("HELLO!, THIS IS MINI-GEMINI, ASK ME ANYTHING!")
-  const [isLoading, setIsLoading] = useState(false)
+  const [theme, setTheme] = useState("light");
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
 
-  async function generateAnswer() {
-
-    //CHECK IF QUESTION IS EMPTY OR WHITESPACE
-    if (!question.trim()) {
-      setAnswer("Hey! I need some text in the box before i can generate an answer. ")
-      return;
+  useEffect(() => {
+    const saved = localStorage.getItem('chatHistory');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) {
+          setMessages(parsed);
+          setShowWelcome(false);
+        }
+      } catch (e) {
+        console.error("Failed to load chat history", e);
+      }
     }
+  }, []);
 
-    setIsLoading(true)
-    setAnswer("Loading...")
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
-    const contents = [
-      { 
-        "parts": [
-          { "text": "You are a helpful and slightly quirky cartoon assistant. Please format your response clearly using Markdown, including lists, tables, and code blocks where appropriate. Use an enthusiastic and friendly tone, and maybe a silly catchphrase." }
-        ]
-      },
-      { "parts": [ { "text": question } ] }
-    ] 
+  async function generateAnswer(currentQuestion) {
+    if (!currentQuestion.trim()) return;
+
+    setShowWelcome(false);
+    
+    const newMessages = [...messages, { type: 'user', text: currentQuestion }];
+    setMessages(newMessages);
+    localStorage.setItem('chatHistory', JSON.stringify(newMessages));
+    
+    setIsLoading(true);
 
     try {
       const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -38,11 +52,14 @@ function App() {
       const response = await axios({
         url: apiUrl,
         method: "post",
-        data: { "contents": [ { "parts": [ { "text": question } ] } ] },
+        data: { "contents": [ { "parts": [ { "text": currentQuestion } ] } ] },
       })
 
       const responseText = response.data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry I couldn't generate an answer."
-      setAnswer(responseText)
+      
+      const finalMessages = [...newMessages, { type: 'ai', text: responseText }];
+      setMessages(finalMessages);
+      localStorage.setItem('chatHistory', JSON.stringify(finalMessages));
     
     } catch (error) {
       console.error("API call error:", error);
@@ -54,116 +71,194 @@ function App() {
       } else {
         console.error("Error Message:", error.message);
       }
-      setAnswer("An error occurred while fetching the answer.")
-      } finally {
-        setIsLoading(false);
-      }  
-
+      const errorMessages = [...newMessages, { type: 'ai', text: "An error occurred while fetching the answer." }];
+      setMessages(errorMessages);
+      localStorage.setItem('chatHistory', JSON.stringify(errorMessages));
+    } finally {
+      setIsLoading(false);
+    }  
   }
 
-  //check if button should be disable
+  const handleSend = () => {
+    generateAnswer(question);
+    setQuestion("");
+  }
+  
+  const handleChipClick = (chipText) => {
+    generateAnswer(chipText);
+  }
+
   const isButtonDisabled = isLoading || !question.trim();
-    
 
   return (
-    <div data-theme={theme}
-    className="
-      min-h-screen
-      flex flex-col items-center
-      px-4 py-6
-      sm:px-6
-      md:px-8
-      max-w-4xl
-      mx-auto
-      font-cartoon
-    ">
+    <div className="flex h-screen w-full text-[var(--text-main)] transition-colors duration-300" style={{ background: 'var(--bg-gradient)' }}>
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col relative h-full">
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', width: '100%', height: '56px', background: 'rgba(255,255,255,0.4)', borderBottom: '0.5px solid rgba(220,100,120,0.15)', position: 'relative', zIndex: 10 }}>
+          {/* Left side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div 
+              onClick={() => setShowWelcome(true)}
+              style={{ fontSize: '20px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #f48fb1, #e53935, #90caf9)', flexShrink: 0 }}></div>
+              <span style={{ color: '#f06292' }}>Mini</span>
+              <span style={{ color: '#e53935' }}>Gemini</span>
+            </div>
+          </div>
 
-  
-    <h1 className="
-      text-center
-      mb-8
-      text-3xl
-      sm:text-4xl
-      md:text-5xl
-    ">WELCOME TO MINI-GEMINI</h1>
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button 
+              onClick={() => {
+                setMessages([]);
+                localStorage.removeItem('chatHistory');
+                setShowWelcome(true);
+              }}
+              className="header-btn"
+              title="Clear Chat"
+              style={{ width: '32px', height: '32px', padding: 0 }}
+            >
+              🗑️
+            </button>
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+              className="header-btn hover:scale-105 transition-transform"
+              title="Toggle Dark Mode"
+              style={{ padding: '6px 12px', fontSize: '12px' }}
+            >
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </button>
+          </div>
+        </div>
 
-    <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="mb-6 text-sm underline opacity-80 hover:opacity-100"
-    >
-      Switch to {theme === "dark" ? "Light" : "Dark"} Mode
-    </button>
+        {showWelcome ? (
+          // SCREEN 1: Landing
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100%', gap: '24px' }}>
+            <p style={{ fontSize: '28px', lineHeight: '1.3', textAlign: 'center', marginBottom: '8px' }}>
+              <span style={{ color: 'var(--heading-muted)' }}>Mini Gemini </span>
+              <strong style={{ color: 'var(--heading-bold)' }}>Your AI Assistant</strong>
+            </p>
+            
+            <div className="glowing-orb" style={{ margin: '0', width: '200px', height: '200px', flexShrink: 0 }}></div>
+            
+            <div style={{ marginTop: '8px', display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {['Explain a concept', 'Write code', 'Summarize text', 'Brainstorm ideas'].map(chip => (
+                <button 
+                  key={chip} 
+                  onClick={() => handleChipClick(chip)} 
+                  className="glass-chip"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
 
+            <div style={{ marginTop: '8px', width: 'min(560px, 88%)', background: 'rgba(255,255,255,0.8)', border: '1.5px solid rgba(220,100,120,0.25)', borderRadius: '20px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 4px 20px rgba(220,100,120,0.1)' }}>
+              <textarea 
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isButtonDisabled) handleSend();
+                  }
+                }}
+                disabled={isLoading}
+                rows={1}
+                placeholder="Ask me anything..."
+                style={{ background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none', WebkitAppearance: 'none', width: '100%', fontSize: '14px', color: '#2a0a0a', resize: 'none' }}
+              />
+              <button 
+                onClick={handleSend}
+                disabled={isButtonDisabled}
+                style={{ background: 'linear-gradient(135deg, #f06292, #e91e8c)', borderRadius: '20px', padding: '7px 16px', color: 'white', fontSize: '12px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                className="disabled:opacity-50 hover:scale-105 transition-transform"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        ) : (
+          // SCREEN 2: Chat View
+          <div className="flex-1 flex flex-col overflow-y-auto w-full max-w-4xl mx-auto">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+              {messages.map((msg, idx) => (
+                msg.type === 'user' ? (
+                  <div key={idx} className="flex flex-col self-end" style={{ maxWidth: '60%' }}>
+                    <div style={{ background: 'linear-gradient(135deg, #f06292, #e91e8c)', color: 'white', borderRadius: '18px 18px 4px 18px', padding: '10px 16px', alignSelf: 'flex-end' }}>
+                      {msg.text}
+                    </div>
+                    <span style={{ fontSize: '10px', color: 'rgba(150,80,120,0.5)', textAlign: 'right', marginTop: '4px' }}>Now</span>
+                  </div>
+                ) : (
+                  <div key={idx} style={{ display: 'flex', gap: '12px', maxWidth: '100%' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #f48fb1, #ce93d8, #90caf9)', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.8)' }}></div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+                      <div className="ai-bubble overflow-hidden flex flex-col gap-2 w-full">
+                        <RichResponse content={msg.text} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--ai-icons)' }}>
+                        <span>Now</span>
+                        <span style={{ cursor: 'pointer' }}>📋</span>
+                        <span style={{ cursor: 'pointer' }}>👍</span>
+                        <span style={{ cursor: 'pointer' }}>🔊</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              ))}
+              
+              {/* Loading Indicator */}
+              {isLoading && (
+                <div style={{ display: 'flex', gap: '12px', maxWidth: '100%' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #f48fb1, #ce93d8, #90caf9)', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.8)' }}></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div className="ai-bubble" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="dot-bounce bg-pink-500 w-1.5 h-1.5 rounded-full"></span>
+                      <span className="dot-bounce bg-pink-500 w-1.5 h-1.5 rounded-full" style={{animationDelay: '0.2s'}}></span>
+                      <span className="dot-bounce bg-pink-500 w-1.5 h-1.5 rounded-full" style={{animationDelay: '0.4s'}}></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-
-    <div className="w-full flex flex-col items-center gap-6 mb-12">
-
-    <textarea 
-      value={question} 
-      onChange={(e) => setQuestion(e.target.value)} 
-      disabled={isLoading}
-      rows={6}
-      placeholder="Ask me anything..."
-      className="input-card focus-ring disabled:opacity-70 text-base sm:text-lg"
-      // className="
-      //     textarea-focus
-      //     p-5 text-white w-full max-w-2xl text-lg 
-      //     rounded-[20px] bg-[#2a2240] border-4 border-[#ffcc00] 
-      //     focus:border-[#ff9900] transition-all duration-300 shadow-[8px_8px_0_0_#8b0000] 
-      //     resize-none font-cartoon-text
-      //     disabled:opacity-75 disabled:cursor-not-allowed"
-      // className="
-      // textarea-glow
-      // p-5 text-white w-full max-w-2xl text-lg rounded-xl bg-[#2a2240] border-4 border-[#ffcc00]
-      // focus:border-[#ff9900] transition-all duration-300 shadow-inner shadow-black/50
-      // resize-none
-      // "
-    ></textarea>
-
-    <button onClick={generateAnswer}
-      disabled={isButtonDisabled}
-      aria-busy={isLoading}
-      className={`
-        primary-button
-        text-xl sm:text-2xl
-        ${!isLoading && !isButtonDisabled ? 'vibrate-once primary-button-enabled' : ''}
-        ${isButtonDisabled ? 'primary-button-disabled' : ''}
-      `}
-      // className={`
-      //     button-vibrate-on-hover
-      //     flex items-center space-x-2
-      //     px-10 py-3 text-2xl font-black rounded-full text-black transition-all duration-150
-      //     font-cartoon-text tracking-wider border-4 border-black
-      //     ${isButtonDisabled 
-      //     ? 'bg-gray-400 text-gray-700 cursor-not-allowed shadow-[5px_5px_0_0_#4b4b4b]' // Disabled state cartoon shadow
-      //     : 'bg-[#ffcc00] hover:bg-[#ff9900] shadow-[8px_8px_0_0_#8b0000] active:translate-x-2 active:translate-y-2 active:shadow-none'
-      //     }
-      //   `}
-      // className={`
-      //  button-vibrate-on-hover
-      //  flex items-center space-x-2
-      //  px-10 py-3 text-xl font-bold rounded-full text-black transition-all duration-150
-      //  ${isButtonDisabled 
-      //   ? 'bg-gray-700 text-gray-400 cursor-not-allowed shadow-none'
-      //   : 'bg-[#ffcc00] hover:bg-[#ff9900] shadow-[5px_5px_0_0_#8b0000] active:translate-x-1 active:translate-y-1 active:shadow-none'
-      //  }`
-      // }
-    >
-      <span>{isLoading ? 'Generating…' : 'Generate Answer'}</span>
-      {!isLoading && <span className="text-3xl">✨</span>}
-    </button>
-  </div>
-  
-  <div className="w-full flex justify-center">
-    <div className="response-card w-full sm:max-w-3xl">
-      <h2 className="text-3xl font-bold mb-4 border-b-4 pb-2 text-left">
-        Response:
-      </h2>
-
-     <RichResponse content={answer} />
+        {/* Input Area (Screen 2) */}
+        {!showWelcome && (
+          <div className="w-full max-w-4xl mx-auto mt-auto shrink-0" style={{ marginBottom: '20px', marginLeft: '16px', marginRight: '16px' }}>
+            <div className="glass-input-container flex items-center" style={{ gap: '10px', padding: '12px 14px' }}>
+              <textarea 
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isButtonDisabled) {
+                      handleSend();
+                    }
+                  }
+                }}
+                disabled={isLoading}
+                rows={1}
+                placeholder="Ask me anything..."
+                style={{ background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none', WebkitAppearance: 'none', width: '100%', fontSize: '14px', color: '#2a0a0a', resize: 'none' }}
+              />
+              <button 
+                onClick={handleSend}
+                disabled={isButtonDisabled}
+                className="send-button disabled:opacity-50"
+              >
+                <span style={{ color: 'white', fontSize: '18px' }}>➤</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-  </div>
   )
 }
 
